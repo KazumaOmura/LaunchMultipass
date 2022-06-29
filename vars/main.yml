@@ -1,0 +1,7 @@
+##
+project_name: youcast
+mysql_user: youcast
+mysql_password: youcast
+mysql_database: youcast_db
+root_dir: /var/www/youcast
+##

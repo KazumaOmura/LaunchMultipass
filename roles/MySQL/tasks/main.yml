@@ -1,0 +1,9 @@
+---
+
+- name: Install tasks
+  import_tasks: install.yml
+  tags: ["install"]
+
+- name: Create User&DB tasks
+  import_tasks: create.yml
+  tags: ["create"]

@@ -1,0 +1,8 @@
+- name: Install MySQL
+  apt:
+    name: mysql-server
+    state: latest
+
+- name: Install python module
+  apt:
+    name: python3-mysqldb

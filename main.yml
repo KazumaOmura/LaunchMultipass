@@ -1,0 +1,12 @@
+- hosts: local
+  become: yes
+  vars_files:
+    - ./vars/main.yml
+  # vars:
+  #   root_dir: /var/www/{{project_name}}
+  roles:
+    - { role: nginx, tags: ["nginx"] }
+    - { role: php, tags: ["php"] }
+    - { role: MySQL, tags: ["MySQL"] }
+    - { role: ssh-ascii, tags: ["ssh-ascii"] }
+    - { role: ufw, tags: ["ufw"] }

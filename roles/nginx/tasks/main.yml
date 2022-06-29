@@ -1,0 +1,24 @@
+---
+# tasks file for nginx
+
+- name: apt update
+  apt:
+    update_cache: yes
+
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: latest
+
+- name: replace nginx.conf
+  replace:
+    dest: /etc/nginx/nginx.conf
+    regexp: 'include /etc/nginx/sites-enabled/\*;'
+    replace: '#include /etc/nginx/sites-enabled/\*;'
+
+- name: Put {{ project_name }}.conf
+  template:
+    src: ../templates/_nginx.conf.j2
+    dest: /etc/nginx/conf.d/{{ project_name }}.conf
+    owner: root
+    group: root
