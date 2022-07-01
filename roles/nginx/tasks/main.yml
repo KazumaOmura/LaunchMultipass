@@ -23,3 +23,8 @@
     owner: root
     group: root
     notify: restart nginx
+
+- name : Nginx restart
+  service:
+    name: nginx
+    state: restarted
