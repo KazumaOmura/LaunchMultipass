@@ -1,7 +1,7 @@
 ##
-project_name: youcast
+project_name: HogeHoge
 mysql_user: youcast
 mysql_password: youcast
-mysql_database: youcast_db
-root_dir: /var/www/youcast
+mysql_database: HogeHoge_db
+root_dir: /var/www/HogeHoge
 ##
