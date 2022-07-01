@@ -1,3 +1,37 @@
+# # helpを作成
+# function usage {
+#   cat <<EOM
+# Usage: $(basename "$0") [OPTION]...
+#   -h          Display help
+#   -a VALUE    A explanation for arg called a
+#   -b VALUE    A explanation for arg called b
+#   -c VALUE    A explanation for arg called c
+#   -d VALUE    A explanation for arg called d
+# EOM
+
+# # 引数別の処理定義
+# while getopts ":a:h" optKey; do
+#   case "$optKey" in
+#     a)
+#       echo "-a = ${OPTARG}"
+#       ;;
+#     '-h'|'--help'|* )
+#       usage
+#       ;;
+#   esac
+# done
+function usage {
+  cat <<EOM
+Usage: $(basename "$0") [OPTION] [INSTANCE NAME]
+  -h                        Display help
+  [INSTANCE NAME]           指定した名前でインスタンス作成
+EOM
+
+  exit 2
+}
+
+
+# サービス名の入力を受け取りインスタンスを作
 function ask_service_name {
     while true; do
         echo "$*"
@@ -5,11 +39,14 @@ function ask_service_name {
         if [ -z "$SERVICE_NAME" ]; then
             echo "not NULL"
         else
-            return 0
+            echo $SERVICE_NAME
+            MULTIPASS_INFO=$(multipass info $SERVICE_NAME)
+            IP_ADDRESS=$($MULTIPASS_INFO | sed -e "s/^.\{6\}//")
+            echo $IP_ADDRESS
+            exit 0
         fi
     done
 }
-ask_service_name "任意のサービス名を入力してください >"
 
 # multipass起動
 launch_instance() {
@@ -82,6 +119,24 @@ function ask_launch_service_yes_or_no {
         esac
     done
 }
+
+
+
+
+# 引数別の処理定義
+while getopts ":h" optKey; do
+  case "$optKey" in
+    # d)
+    #   echo "インスタンスを削除します"
+    #   ;;
+    '-h'|'--help'|* )
+      usage
+      ;;
+  esac
+done
+
+ask_service_name "任意のサービス名を入力してください >"
+
 if ask_launch_service_yes_or_no "サービス名「"$SERVICE_NAME"」でインスタンスを作成しますか？"; then
 
     echo "--- 「"$SERVICE_NAME"」インスタンス作成 ---"
