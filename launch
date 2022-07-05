@@ -92,8 +92,8 @@ run_ansible() {
 
 # multipass mount設置
 run_mount() {
-    multipass mount ../CMS $1:/var/www/$1/cms
-    multipass mount ../APP $1:/var/www/$1/app
+    multipass mount ./CMS $1:/var/www/$1/cms
+    multipass mount ./APP $1:/var/www/$1/app
 }
 
 # /etc/hosts 書き換え
