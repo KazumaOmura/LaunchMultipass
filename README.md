@@ -7,7 +7,7 @@
 
 ## multipassで環境構築
 ```
-$ sh launch.sh
+$ sh launch
 ```
 
 ## 実行例
