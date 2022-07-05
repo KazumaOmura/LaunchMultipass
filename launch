@@ -1,49 +1,60 @@
-# # helpを作成
-# function usage {
-#   cat <<EOM
-# Usage: $(basename "$0") [OPTION]...
-#   -h          Display help
-#   -a VALUE    A explanation for arg called a
-#   -b VALUE    A explanation for arg called b
-#   -c VALUE    A explanation for arg called c
-#   -d VALUE    A explanation for arg called d
-# EOM
-
-# # 引数別の処理定義
-# while getopts ":a:h" optKey; do
-#   case "$optKey" in
-#     a)
-#       echo "-a = ${OPTARG}"
-#       ;;
-#     '-h'|'--help'|* )
-#       usage
-#       ;;
-#   esac
-# done
 function usage {
-  cat <<EOM
+    cat <<EOM
 Usage: $(basename "$0") [OPTION] [INSTANCE NAME]
   -h                        Display help
   [INSTANCE NAME]           指定した名前でインスタンス作成
 EOM
 
-  exit 2
+    exit 2
 }
 
-
 # サービス名の入力を受け取りインスタンスを作
-function ask_service_name {
+ask_service_name() {
     while true; do
         echo "$*"
         read SERVICE_NAME
         if [ -z "$SERVICE_NAME" ]; then
             echo "not NULL"
         else
-            echo $SERVICE_NAME
-            MULTIPASS_INFO=$(multipass info $SERVICE_NAME)
-            IP_ADDRESS=$($MULTIPASS_INFO | sed -e "s/^.\{6\}//")
-            echo $IP_ADDRESS
-            exit 0
+            MULTIPASS_INFO_VALUE=$(multipass info $SERVICE_NAME | grep IPv4)
+            INSTANCE_FLAG=$(echo $MULTIPASS_INFO_VALUE | sed -e "s/^.\{6\}//")
+
+            if [[ $INSTANCE_FLAG =~ 192.168 ]]; then
+                if ask_delete_service_yes_or_no "「"$SERVICE_NAME"」インスタンスを削除して再度作しますか？"; then
+
+                    echo "--> 「"$SERVICE_NAME"」インスタンス削除"
+                    delete_instance $SERVICE_NAME
+                    
+                    echo "--- 「"$SERVICE_NAME"」インスタンス作成 ---"
+                    launch_instance $SERVICE_NAME
+                    echo "----------------------------------------"
+
+                    IP_ADDRESS=$(get_ip_address $SERVICE_NAME)
+                    echo "--> インスタンス:"$SERVICE_NAME"のIPアドレス:"$IP_ADDRESS"」"
+
+                    echo "--> hosts書き換え"
+                    rewrite_hosts $IP_ADDRESS
+
+                    echo "--> etc/hosts追記"
+                    rewrite_etc_hosts $SERVICE_NAME $IP_ADDRESS
+
+                    echo "--> vars project_name 変更"
+                    rewrite_vars $SERVICE_NAME
+
+                    echo "--- Ansible実行 ---"
+                    run_ansible
+                    echo "----------------------------------------"
+
+                    echo "--- mount設置 ---"
+                    run_mount $SERVICE_NAME
+                    echo "----------------------------------------"
+
+                else
+                    exit
+                fi
+            else
+                return 0
+            fi
         fi
     done
 }
@@ -51,6 +62,13 @@ function ask_service_name {
 # multipass起動
 launch_instance() {
     multipass launch 20.04 -n $1 --cloud-init cloud-config.yml
+}
+
+# multipass削除
+delete_instance() {
+    multipass delete $1
+    multipass purge
+    sed -e '/'.$1.'/d' ~/.ssh/known_hosts
 }
 
 # multipassインスタンスのipアドレスを正規表現で取得
@@ -62,7 +80,7 @@ get_ip_address() {
 
 # hostsファイルのlocal ipアドレスを変更
 rewrite_hosts() {
-    : > ./hosts
+    : >./hosts
     echo \[local\] >>./hosts
     echo $1 >>./hosts
 }
@@ -87,12 +105,12 @@ rewrite_etc_hosts() {
     echo $2 cms.$1-local.com >>/etc/hosts
     echo \#\# ansible-$1-end >>/etc/hosts
     echo >>/etc/hosts
-    # sudo chmod 600 /etc/hosts
+    sudo chmod 755 /etc/hosts
 }
 
 # vars 変更
 rewrite_vars() {
-    : > ./vars/main.yml
+    : >./vars/main.yml
     echo \#\# >>./vars/main.yml
     echo project_name: $1 >>./vars/main.yml
     echo mysql_user: youcast >>./vars/main.yml
@@ -120,24 +138,39 @@ function ask_launch_service_yes_or_no {
     done
 }
 
-
-
+function ask_delete_service_yes_or_no {
+    while true; do
+        echo "$* [y/n]: "
+        read ANS2
+        case $ANS2 in
+        [Yy]*)
+            return 0
+            ;;
+        [Nn]*)
+            return 1
+            ;;
+        *)
+            echo "yまたはnを入力してください"
+            ;;
+        esac
+    done
+}
 
 # 引数別の処理定義
 while getopts ":h" optKey; do
-  case "$optKey" in
+    case "$optKey" in
     # d)
     #   echo "インスタンスを削除します"
     #   ;;
-    '-h'|'--help'|* )
-      usage
-      ;;
-  esac
+    '-h' | '--help' | *)
+        usage
+        ;;
+    esac
 done
 
 ask_service_name "任意のサービス名を入力してください >"
 
-if ask_launch_service_yes_or_no "サービス名「"$SERVICE_NAME"」でインスタンスを作成しますか？"; then
+if ask_launch_service_yes_or_no "「"$SERVICE_NAME"」インスタンスを作成しますか？"; then
 
     echo "--- 「"$SERVICE_NAME"」インスタンス作成 ---"
     launch_instance $SERVICE_NAME
